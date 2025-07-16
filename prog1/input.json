@@ -1,0 +1,9 @@
+{
+  "person": {
+    "name": "Rahul Sharma",
+    "mobile": "+91-9876543210",
+    "blood_group": "B+",
+    "email": "rahul.sharma@example.com",
+    "aadhaar_number": "1234-5678-9012"
+  }
+}
