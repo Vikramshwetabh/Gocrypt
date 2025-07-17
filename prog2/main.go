@@ -4,51 +4,89 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-
+	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 )
 
-func main() {
-	// Generate a strong, random key
-	key := make([]byte, 32) // AES-256 key
-	if _, err := io.ReadFull(rand.Reader, key); err != nil {
-		panic(err.Error())
-	}
+// Person struct matches the JSON structure
+type Person struct {
+	Name          string `json:"name"`
+	Mobile        string `json:"mobile"`
+	BloodGroup    string `json:"blood_group"`
+	Email         string `json:"email"`
+	AadhaarNumber string `json:"aadhaar_number"`
+}
 
-	plaintext := []byte("This is the data for encryption.")
+type Data struct {
+	Person Person `json:"person"`
+}
 
-	//encryption
-
+// Encrypt function
+func encrypt(data []byte, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
-
-	aesgcm, err := cipher.NewGCM(block)
+	ciphertext := make([]byte, aes.BlockSize+len(data))
+	iv := ciphertext[:aes.BlockSize]
+	_, err = io.ReadFull(rand.Reader, iv)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], data)
+	return ciphertext, nil
+}
 
-	nonce := make([]byte, aesgcm.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		panic(err.Error())
-	}
-
-	ciphertext := aesgcm.Seal(nil, nonce, plaintext, nil) // Seal encrypts and authenticates, appending the tag.
-	fmt.Printf("Encrypted (hex): %x\n", ciphertext)
-	fmt.Printf("Nonce (hex): %x\n", nonce)
-
-	// --- Decryption ---
-
-	// When decrypting, you need the same key and nonce.
-	// You can extract the nonce from the beginning of the ciphertext if you appended it during encryption.
-	// In this example, we kept the nonce separate for clarity.
-
-	decryptedPlaintext, err := aesgcm.Open(nil, nonce, ciphertext, nil) // Open decrypts and authenticates.
+// Decrypt function
+func decrypt(ciphertext []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err.Error()) // Decryption failed, potentially due to incorrect key, nonce, or corrupted data.
+		return nil, err
+	}
+	iv := ciphertext[:aes.BlockSize]
+	data := ciphertext[aes.BlockSize:]
+	stream := cipher.NewCFBDecrypter(block, iv)
+	stream.XORKeyStream(data, data)
+	return data, nil
+}
+
+func main() {
+	// Read JSON file
+	fileData, err := os.ReadFile("input.json")
+	if err != nil {
+		fmt.Println("Error reading file:", err)
+		return
 	}
 
-	fmt.Printf("Decrypted: %s\n", string(decryptedPlaintext))
+	// Key for encryption (must be 16, 24, or 32 bytes)
+	key := []byte("examplekey123456")
+
+	// Encrypt the JSON data
+	encrypted, err := encrypt(fileData, key)
+	if err != nil {
+		fmt.Println("Error encrypting:", err)
+		return
+	}
+	fmt.Println("Encrypted:", encrypted)
+
+	// Decrypt the data
+	decrypted, err := decrypt(encrypted, key)
+	if err != nil {
+		fmt.Println("Error decrypting:", err)
+		return
+	}
+
+	// Convert decrypted data back to struct
+	var data Data
+	err = json.Unmarshal(decrypted, &data)
+	if err != nil {
+		fmt.Println("Error parsing JSON:", err)
+		return
+	}
+
+	// Print the result
+	fmt.Println("Decrypted Data:", data.Person)
 }
