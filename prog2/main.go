@@ -25,18 +25,18 @@ type Data struct {
 
 // Encrypt function
 func encrypt(data []byte, key []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
+	block, err := aes.NewCipher(key) // Create a new AES cipher block
 	if err != nil {
 		return nil, err
 	}
-	ciphertext := make([]byte, aes.BlockSize+len(data))
-	iv := ciphertext[:aes.BlockSize]
-	_, err = io.ReadFull(rand.Reader, iv)
+	ciphertext := make([]byte, aes.BlockSize+len(data)) //created a slice for cipher text
+	iv := ciphertext[:aes.BlockSize]                    // Generate a new IV
+	_, err = io.ReadFull(rand.Reader, iv)               // Fill the IV with random data
 	if err != nil {
 		return nil, err
 	}
-	stream := cipher.NewCFBEncrypter(block, iv)
-	stream.XORKeyStream(ciphertext[aes.BlockSize:], data)
+	stream := cipher.NewCFBEncrypter(block, iv)           // Create a new CFB encrypter
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], data) // Encrypt the data using XOR
 	return ciphertext, nil
 }
 
