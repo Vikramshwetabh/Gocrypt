@@ -30,7 +30,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.println("Original Data:")
+	fmt.Println("Original Data:")
 	fmt.Println("Name:", data.Person.Name)
 	fmt.Println("Email:", data.Person.Email)
 	fmt.Println("Mobile:", data.Person.Mobile)
